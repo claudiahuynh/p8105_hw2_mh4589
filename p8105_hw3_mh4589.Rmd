@@ -26,7 +26,7 @@ snow_mode =
 
 The dataset NY NOAA provies information on temperature, snowfall, snow depth and precipitation everyday starting from 1981 at different weather stations in NY. Most of the data values came back 
 
-There are `nrow(ny_noaa)` rows and `ncol(ny_noaa)` columns. 
+There are `r nrow(ny_noaa)` rows and `r ncol(ny_noaa)` columns. 
 The most common snowfall is 0. This is because snow is commonly observed on certain days during winter months, but not the rest of the year. 
 Make a two-panel plot showing the average max temperature in January and in July in each station across years. 
 
@@ -53,10 +53,14 @@ ny_noaa_df |>
   theme_minimal()
 ```
 
+
+
+Disrtibution of snow by year 
 ```{r}
 ny_noaa_df |> 
   filter(snow > 0, snow < 100) |> 
-  ggplot(aes(x = tmax, y = tmin)) 
+  ggplot(aes(x = snow, fill = year)) +
+  geom_density()
   
   
 ```
@@ -129,5 +133,92 @@ nhanes_df |>
     y = "Total Activity"
   )
 
+```
+
+## Problem 3
+
+Load the zip files and joined 4 datasets together. 
+```{r}
+jan_20_df = 
+  read_csv("data/Jan 2020 Citi.csv") |>
+  janitor::clean_names() |> 
+  mutate(
+    month = "January",
+    year = "2020"
+  )
+
+jan_24_df = 
+  read_csv("data/Jan 2024 Citi.csv") |> 
+  janitor::clean_names() |> 
+   mutate(
+    month = "January",
+    year = "2024"
+  )
+
+
+jul_20_df = 
+  read_csv("data/July 2020 Citi.csv") |> 
+  janitor::clean_names() |> 
+   mutate(
+    month = "July",
+    year = "2020"
+  )
+
+
+jul_24_df = 
+  read_csv("data/July 2024 Citi.csv") |> 
+  janitor::clean_names() |> 
+   mutate(
+    month = "July",
+    year = "2024"
+  )
+
+citi_df = 
+  bind_rows(jan_20_df, jan_24_df, jul_20_df, jul_24_df)
+  
+```
+
+The joined dataset includes information on 1% of all rides with a total duration less than 4 hours in each of four months (January 2020, July 2020, January 2024 and July 2024). The variables in this dataset are ride IDs, types of ride, days of the week that the bikes were rented on, duration of rental (in minutes), pickup and drop off locations, and types of membership (Citi Bike member or casual). There are `r ncol(citi_df)` variables and `r nrow(citi_df)` observations. 
+
+
+Create a reader-friendly table showing the total number of rides in each combination of year and month separating casual riders and Citi Bike members. The results show that there are more bikes being rented in July compared to January across both 2020 and 2024. There are more bikes being rented in 2024 compared to 2020. Overall, there are more members renting CitiBike than non-members (casual). 
+```{r}
+citi_df |> 
+  group_by(month, year, member_casual) |> 
+  summarize(
+    count = n()
+  ) |> 
+  pivot_wider(
+    names_from = member_casual,
+    values_from = count
+  ) |> 
+  knitr::kable()
+```
+
+Crete a table showing 5 most popular starting stations in July 2024. 
+
+```{r}
+  citi_df |> 
+  filter(month == "July", year == "2024", .keep_all = TRUE) |> 
+  group_by(start_station_name) |> 
+  summarize(numer_of_rides = n()) |> 
+  mutate(
+    start_station_rank = min_rank(desc(numer_of_rides))
+  ) |> 
+  arrange(start_station_rank) |> 
+  head(5)
+```
+
+Make a plot that investigates the effects of day of the week, month, and year on median ride duration.
+
+```{r}
+citi_df |> 
+  group_by(weekdays, month, year) |> 
+  summarize(
+    median_duration = median(duration, ra.rm = TRUE)
+  ) |> 
+  ggplot(aes(x = weekdays, y = median_duration, fill = weekdays)) +
+  geom_bar(stat = "identity") +
+  facet_grid(year ~ month)
 ```
 
